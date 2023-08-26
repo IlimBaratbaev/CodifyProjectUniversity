@@ -1,15 +1,18 @@
 package com.example.univercityv1.service.impl;
 
 import com.example.univercityv1.dto.request.ApplicationFormRequest;
+import com.example.univercityv1.dto.request.FinishedAssignmentDtoRequest;
 import com.example.univercityv1.entity.*;
-import com.example.univercityv1.exception.ApplicationFormException;
-import com.example.univercityv1.exception.InvalidCredentialsException;
+import com.example.univercityv1.exception.*;
 import com.example.univercityv1.repository.*;
 import com.example.univercityv1.service.StudentService;
 import com.example.univercityv1.utils.ExceptionCheckingUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -20,15 +23,25 @@ public class StudentServiceImpl implements StudentService {
     private final SpecialityRepository specialityRepository;
     private final AppUserRepository appUserRepository;
     private final ExceptionCheckingUtil exceptionCheckingUtil;
+    private final StudentRepository studentRepository;
+    private final ScheduleRepository scheduleRepository;
+    private final AssignmentRepository assignmentRepository;
+    private final SubjectRepository subjectRepository;
+    private final FinishedAssignmentRepository finishedAssignmentRepository;
 
     @Autowired
-    public StudentServiceImpl(ApplicationFormRepository applicationFormRepository, FacultyRepository facultyRepository, DepartmentRepository departmentRepository, SpecialityRepository specialityRepository, AppUserRepository appUserRepository, ExceptionCheckingUtil exceptionCheckingUtil) {
+    public StudentServiceImpl(ApplicationFormRepository applicationFormRepository, FacultyRepository facultyRepository, DepartmentRepository departmentRepository, SpecialityRepository specialityRepository, AppUserRepository appUserRepository, ExceptionCheckingUtil exceptionCheckingUtil, StudentRepository studentRepository, ScheduleRepository scheduleRepository, AssignmentRepository assignmentRepository, SubjectRepository subjectRepository, FinishedAssignmentRepository finishedAssignmentRepository) {
         this.applicationFormRepository = applicationFormRepository;
         this.facultyRepository = facultyRepository;
         this.departmentRepository = departmentRepository;
         this.specialityRepository = specialityRepository;
         this.appUserRepository = appUserRepository;
         this.exceptionCheckingUtil = exceptionCheckingUtil;
+        this.studentRepository = studentRepository;
+        this.scheduleRepository = scheduleRepository;
+        this.assignmentRepository = assignmentRepository;
+        this.subjectRepository = subjectRepository;
+        this.finishedAssignmentRepository = finishedAssignmentRepository;
     }
 
 
@@ -65,5 +78,50 @@ public class StudentServiceImpl implements StudentService {
                 .setSpecialityEntity(specialityEntity);
         applicationFormRepository.save(result);
         return result;
+    }
+
+    @Override
+    public List<ScheduleEntity> getMyStudentSchedule() throws UserNotFoundException {
+        AppUserEntity appUserEntity = (AppUserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Optional<StudentEntity> optionalStudentEntity = studentRepository.findByAppUserEntity(appUserEntity);
+        exceptionCheckingUtil.checkForPresentStudent(optionalStudentEntity, appUserEntity.getLogin());
+        StudentEntity studentEntity = optionalStudentEntity.get();
+        List<ScheduleEntity> scheduleEntities = scheduleRepository.findAllByLessonEntity_GroupEntity_Id(studentEntity.getGroupEntity().getId());
+        return scheduleEntities;
+    }
+
+    @Override
+    public List<Assignment> getMyAssignmentsBySubjectName(String subjectName) throws InvalidCredentialsException, SubjectException, UserNotFoundException {
+        AppUserEntity appUserEntity = (AppUserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Optional<StudentEntity> optionalStudentEntity = studentRepository.findByAppUserEntity(appUserEntity);
+        exceptionCheckingUtil.checkForPresentStudent(optionalStudentEntity, appUserEntity.getLogin());
+        StudentEntity studentEntity = optionalStudentEntity.get();
+        exceptionCheckingUtil.checkForEmptiness(subjectName);
+        Optional<SubjectEntity> optionalSubjectEntity = subjectRepository.findByTitle(subjectName);
+        exceptionCheckingUtil.checkForPresentSubject(optionalSubjectEntity);
+        List<Assignment> assignments = assignmentRepository
+                .findAllByLessonEntity_SubjectEntityAndLessonEntity_GroupEntity(optionalSubjectEntity.get(), studentEntity.getGroupEntity());
+        return assignments;
+    }
+
+    @Override
+    public FinishedAssignment sendAssignment(FinishedAssignmentDtoRequest finishedAssignmentDtoRequest) throws UserNotFoundException, AssignmentException {
+        AppUserEntity appUserEntity = (AppUserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Optional<StudentEntity> optionalStudentEntity = studentRepository.findByAppUserEntity(appUserEntity);
+        exceptionCheckingUtil.checkForPresentStudent(optionalStudentEntity, appUserEntity.getLogin());
+        StudentEntity studentEntity = optionalStudentEntity.get();
+        Optional<Assignment> optionalAssignment = assignmentRepository.findById(finishedAssignmentDtoRequest.getAssignmentId());
+        exceptionCheckingUtil.checkForPresentAssignment(optionalAssignment);
+        if (!studentEntity.getGroupEntity().equals(optionalAssignment.get().getGroupEntity())) {
+            throw new AssignmentException("Задание было отправлено в другую группу!");
+        }
+        FinishedAssignment finishedAssignment = new FinishedAssignment();
+        finishedAssignment
+                .setAssignment(optionalAssignment.get())
+                .setStudentEntity(studentEntity)
+                .setSolution(finishedAssignmentDtoRequest.getSolution())
+                .setSentTime(LocalDateTime.now());
+        finishedAssignmentRepository.save(finishedAssignment);
+        return finishedAssignment;
     }
 }

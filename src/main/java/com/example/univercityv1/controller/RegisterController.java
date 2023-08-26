@@ -4,11 +4,10 @@ import com.example.univercityv1.dto.request.AppUserDtoRequest;
 import com.example.univercityv1.dto.request.ApplicationFormRequest;
 import com.example.univercityv1.dto.response.AppUserDtoResponse;
 import com.example.univercityv1.dto.response.ApplicationFormResponse;
+import com.example.univercityv1.dto.response.StudentDtoResponse;
 import com.example.univercityv1.entity.ApplicationFormEntity;
 import com.example.univercityv1.entity.StudentEntity;
-import com.example.univercityv1.exception.ApplicationFormException;
-import com.example.univercityv1.exception.InvalidCredentialsException;
-import com.example.univercityv1.exception.UserNotFoundException;
+import com.example.univercityv1.exception.*;
 import com.example.univercityv1.mapper.ApplicationFormMapper;
 import com.example.univercityv1.mapper.EntityMapper;
 import com.example.univercityv1.repository.ApplicationFormRepository;
@@ -49,7 +48,7 @@ public class RegisterController {
     @PostMapping(value = "/user")
     public AppUserDtoResponse registerNewUser(
             @RequestBody AppUserDtoRequest appUserDtoRequest
-    ){
+    ) throws InvalidCredentialsException, UserException {
         return entityMapper.mapAppUserToDto(appUserService.registerNewUser(appUserDtoRequest));
     }
 
@@ -96,10 +95,10 @@ public class RegisterController {
 
     @PreAuthorize("hasAnyRole('DEPARTMENT_HEAD', 'RECTOR_SEC')")
     @PostMapping(value = "/student/speciality")
-    public StudentEntity registerToSpeciality(
+    public StudentDtoResponse registerToSpeciality(
             @RequestParam(value = "id") Long id,
             @RequestParam(value = "login") String studentLogin
-    ) throws UserNotFoundException, InvalidCredentialsException {
-        return studentEnrollmentService.enrollStudentToSpeciality(studentLogin, id);
+    ) throws UserNotFoundException, InvalidCredentialsException, RoleException {
+        return entityMapper.mapStudentToDtoResponse(studentEnrollmentService.enrollStudentToSpeciality(studentLogin, id));
     }
 }

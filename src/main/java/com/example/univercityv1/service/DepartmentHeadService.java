@@ -1,10 +1,9 @@
 package com.example.univercityv1.service;
 
-import com.example.univercityv1.entity.EmployeeEntity;
-import com.example.univercityv1.entity.SpecialityEntity;
-import com.example.univercityv1.entity.SubjectEntity;
-import com.example.univercityv1.entity.TeacherEntity;
+import com.example.univercityv1.dto.request.LessonDtoRequest;
+import com.example.univercityv1.entity.*;
 import com.example.univercityv1.exception.InvalidCredentialsException;
+import com.example.univercityv1.exception.LessonException;
 import com.example.univercityv1.exception.SubjectException;
 import com.example.univercityv1.exception.UserNotFoundException;
 
@@ -16,4 +15,6 @@ public interface DepartmentHeadService {
     TeacherEntity deleteSubjectFromTeacher(Long teacherId, String subjectName) throws InvalidCredentialsException, SubjectException;
     SpecialityEntity addSubjectToSpeciality(Long specialityId, String subjectName) throws InvalidCredentialsException;
     SpecialityEntity getSpeciality(Long specialityId) throws InvalidCredentialsException;
+    StudentEntity studentExpulsion(Long studentId) throws UserNotFoundException;
+    LessonEntity createNewLesson(LessonDtoRequest lessonDtoRequest) throws LessonException, InvalidCredentialsException;
 }

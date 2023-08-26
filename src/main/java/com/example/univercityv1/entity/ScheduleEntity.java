@@ -5,7 +5,7 @@ import javax.persistence.*;
 @Entity
 @Table(name = "schedule")
 public class ScheduleEntity {
-    //Доработать расписание
+
     public ScheduleEntity() {
     }
     @Id
@@ -13,5 +13,25 @@ public class ScheduleEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToOne
+    @JoinColumn(name = "lesson_id", referencedColumnName = "id")
+    private LessonEntity lessonEntity;
 
+    public Long getId() {
+        return id;
+    }
+
+    public ScheduleEntity setId(Long id) {
+        this.id = id;
+        return this;
+    }
+
+    public LessonEntity getLessonEntity() {
+        return lessonEntity;
+    }
+
+    public ScheduleEntity setLessonEntity(LessonEntity lessonEntity) {
+        this.lessonEntity = lessonEntity;
+        return this;
+    }
 }

@@ -1,10 +1,10 @@
 package com.example.univercityv1.controller;
 
-import com.example.univercityv1.dto.response.AppUserDtoResponse;
-import com.example.univercityv1.dto.response.DepartmentDtoResponse;
-import com.example.univercityv1.dto.response.FacultyDtoResponse;
-import com.example.univercityv1.dto.response.GroupDtoResponse;
+import com.example.univercityv1.dto.response.*;
 import com.example.univercityv1.entity.AppUserEntity;
+import com.example.univercityv1.entity.GroupEntity;
+import com.example.univercityv1.entity.StudentEntity;
+import com.example.univercityv1.exception.InvalidCredentialsException;
 import com.example.univercityv1.exception.UserNotFoundException;
 import com.example.univercityv1.mapper.EntityMapper;
 import com.example.univercityv1.repository.AppUserRepository;
@@ -69,5 +69,20 @@ public class ViewController {
         return entityMapper.mapAppUserToDtoList(appUserEntityList);
     }
 
+    @PreAuthorize("hasAnyRole('DEPARTMENT_HEAD')")
+    @GetMapping(value = "/groups/byDepartment")
+    public List<GroupDtoResponse> getAllGroupsByDepartmentId(
+            @RequestParam(name = "departmentId") Long departmentId
+    ) throws InvalidCredentialsException {
+        List<GroupEntity> groupEntities = viewService.getGroupsByDepartmentId(departmentId);
+        return entityMapper.mapGroupToDtoList(groupEntities);
+    }
+    @PreAuthorize("hasAnyRole('DEPARTMENT_HEAD')")
+    @GetMapping(value = "/students/byGroup")
+    public List<StudentDtoResponse> getStudentsByGroupId(
+            @RequestParam(name = "groupId") Long groupId) throws InvalidCredentialsException {
+        List<StudentEntity> studentEntities = viewService.getStudentsByGroupId(groupId);
+        return entityMapper.mapStudentsToDtoResponses(studentEntities);
+    }
 
 }

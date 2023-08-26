@@ -5,6 +5,7 @@ import com.example.univercityv1.entity.FacultyEntity;
 import com.example.univercityv1.entity.SpecialityEntity;
 import com.example.univercityv1.entity.StudentEntity;
 import com.example.univercityv1.exception.InvalidCredentialsException;
+import com.example.univercityv1.exception.RoleException;
 import com.example.univercityv1.exception.UserNotFoundException;
 import com.example.univercityv1.repository.*;
 import com.example.univercityv1.service.StudentEnrollmentService;
@@ -21,14 +22,16 @@ public class StudentEnrollmentServiceImpl implements StudentEnrollmentService {
     private final DepartmentRepository departmentRepository;
     private final SpecialityRepository specialityRepository;
     private final GroupRepository groupRepository;
+    private final CreateEditServiceImpl createEditService;
 
-    public StudentEnrollmentServiceImpl(StudentRepository studentRepository, ExceptionCheckingUtil exceptionCheckingUtil, FacultyRepository facultyRepository, DepartmentRepository departmentRepository, SpecialityRepository specialityRepository, GroupRepository groupRepository) {
+    public StudentEnrollmentServiceImpl(StudentRepository studentRepository, ExceptionCheckingUtil exceptionCheckingUtil, FacultyRepository facultyRepository, DepartmentRepository departmentRepository, SpecialityRepository specialityRepository, GroupRepository groupRepository, CreateEditServiceImpl createEditService) {
         this.studentRepository = studentRepository;
         this.exceptionCheckingUtil = exceptionCheckingUtil;
         this.facultyRepository = facultyRepository;
         this.departmentRepository = departmentRepository;
         this.specialityRepository = specialityRepository;
         this.groupRepository = groupRepository;
+        this.createEditService = createEditService;
     }
 
     @Override
@@ -57,7 +60,7 @@ public class StudentEnrollmentServiceImpl implements StudentEnrollmentService {
     }
 
     @Override
-    public StudentEntity enrollStudentToSpeciality(String login, Long id) throws InvalidCredentialsException, UserNotFoundException {
+    public StudentEntity enrollStudentToSpeciality(String login, Long id) throws InvalidCredentialsException, UserNotFoundException, RoleException {
         Optional<StudentEntity> optionalStudentEntity = studentRepository.findByAppUserEntity_Login(login);
         exceptionCheckingUtil.checkForEmptiness(login);
         exceptionCheckingUtil.checkForPresentStudent(optionalStudentEntity, login);
@@ -66,7 +69,8 @@ public class StudentEnrollmentServiceImpl implements StudentEnrollmentService {
         exceptionCheckingUtil.checkForPresentOptional(optionalSpecialityEntity, id.toString(), "нет специальности с таким id.");
         studentEntity.setSpecialityEntity(optionalSpecialityEntity.get());
         studentEntity.setGroupEntity(groupRepository.findBySpecialityEntityId(id));
+        this.createEditService.giveRoleToUser(login, "STUDENT");
         studentRepository.save(studentEntity);
-        return null;
+        return studentEntity;
     }
 }

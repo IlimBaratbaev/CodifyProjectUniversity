@@ -1,6 +1,7 @@
 package com.example.univercityv1.entity;
 
 import javax.persistence.*;
+import java.util.List;
 
 @Entity
 @Table(schema = "public", name = "student")
@@ -117,4 +118,5 @@ public class StudentEntity {
         this.specialityEntity = specialityEntity;
         return this;
     }
+
 }

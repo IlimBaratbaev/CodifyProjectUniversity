@@ -3,6 +3,7 @@ package com.example.univercityv1.service.impl;
 import com.example.univercityv1.dto.request.AppUserDtoRequest;
 import com.example.univercityv1.entity.AppUserEntity;
 import com.example.univercityv1.exception.InvalidCredentialsException;
+import com.example.univercityv1.exception.UserException;
 import com.example.univercityv1.exception.UserNotFoundException;
 import com.example.univercityv1.repository.AppRoleRepository;
 import com.example.univercityv1.repository.AppUserRepository;
@@ -14,22 +15,20 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
 public class AppUserServiceImpl implements AppUserService {
     private final AppUserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final AppRoleRepository appRoleRepository;
-    private final PositionRepository positionRepository;
     private final ExceptionCheckingUtil exceptionCheckingUtil;
 
     @Autowired
-    public AppUserServiceImpl(AppUserRepository userRepository, PasswordEncoder passwordEncoder, AppRoleRepository appRoleRepository, PositionRepository positionRepository, ExceptionCheckingUtil exceptionCheckingUtil) {
+    public AppUserServiceImpl(AppUserRepository userRepository, PasswordEncoder passwordEncoder, ExceptionCheckingUtil exceptionCheckingUtil) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        this.appRoleRepository = appRoleRepository;
-        this.positionRepository = positionRepository;
+
         this.exceptionCheckingUtil = exceptionCheckingUtil;
     }
 
@@ -37,14 +36,22 @@ public class AppUserServiceImpl implements AppUserService {
     public AppUserEntity getUserByLogin(String login) throws UserNotFoundException, InvalidCredentialsException {
         exceptionCheckingUtil.checkForEmptiness(login);
         Optional<AppUserEntity> optionalUser=  userRepository.findByLogin(login);
-        if (optionalUser.isEmpty()){
-            throw new UsernameNotFoundException("Нет пользователя с логином: " + login);
-        }
+        exceptionCheckingUtil.checkForPresentUser(optionalUser, login);
         return optionalUser.get();
     }
 
     @Override
-    public AppUserEntity registerNewUser(AppUserDtoRequest appUserDtoRequest) {
+    public AppUserEntity registerNewUser(AppUserDtoRequest appUserDtoRequest) throws InvalidCredentialsException, UserException {
+        exceptionCheckingUtil.checkForEmptiness(appUserDtoRequest.getLogin());
+        exceptionCheckingUtil.checkForEmptiness(appUserDtoRequest.getName());
+        exceptionCheckingUtil.checkForEmptiness(appUserDtoRequest.getSurname());
+        exceptionCheckingUtil.checkForEmptiness(appUserDtoRequest.getPassword());
+        List<AppUserEntity> userEntities = userRepository.findAll();
+        for (AppUserEntity appUserEntity : userEntities) {
+            if (appUserEntity.getLogin().equals(appUserDtoRequest.getLogin())) {
+                throw new UserException("Пользователь с логином " + appUserDtoRequest.getLogin() + " уже существует");
+            }
+        }
         AppUserEntity appUserEntity = new AppUserEntity()
                 .setName(appUserDtoRequest.getName())
                 .setSurname(appUserDtoRequest.getSurname())

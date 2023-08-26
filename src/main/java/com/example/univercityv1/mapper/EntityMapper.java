@@ -2,9 +2,6 @@ package com.example.univercityv1.mapper;
 
 import com.example.univercityv1.dto.response.*;
 import com.example.univercityv1.entity.*;
-import com.example.univercityv1.repository.DepartmentRepository;
-import com.example.univercityv1.repository.FacultyRepository;
-import com.example.univercityv1.repository.GroupRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -13,17 +10,14 @@ import java.util.List;
 
 @Component
 public class EntityMapper {
-    private final DepartmentRepository departmentRepository;
-    private final FacultyRepository facultyRepository;
-    private final GroupRepository groupRepository;
     private final MapstructMapper mapstructMapper;
+    private final SpecialtyMapper specialtyMapper;
 
     @Autowired
-    public EntityMapper(DepartmentRepository departmentRepository, FacultyRepository facultyRepository, GroupRepository groupRepository, MapstructMapper mapstructMapper) {
-        this.departmentRepository = departmentRepository;
-        this.facultyRepository = facultyRepository;
-        this.groupRepository = groupRepository;
+    public EntityMapper(MapstructMapper mapstructMapper, SpecialtyMapper specialtyMapper) {
+
         this.mapstructMapper = mapstructMapper;
+        this.specialtyMapper = specialtyMapper;
     }
 
     public FacultyDtoResponse mapFacultyToDto(FacultyEntity facultyEntity) {
@@ -57,6 +51,7 @@ public class EntityMapper {
     public GroupDtoResponse mapGroupToDto(GroupEntity groupEntity) {
         String title = groupEntity.getTitle();
         Long id = groupEntity.getId();
+
         return new GroupDtoResponse().setId(id).setTitle(title);
     }
 
@@ -97,4 +92,26 @@ public class EntityMapper {
         List<SubjectDtoResponse> subjectEntities = this.mapstructMapper.mapSubjectsToDtoResponses(teacherEntity.getSubjectEntities());
         return new TeacherDtoResponse().setEmployeeDtoResponse(employeeDtoResponse).setId(id).setSubjectDtoResponses(subjectEntities);
     }
+
+    public StudentDtoResponse mapStudentToDtoResponse(StudentEntity studentEntity) {
+        StudentDtoResponse studentDtoResponse = new StudentDtoResponse();
+
+        studentDtoResponse
+                .setId( studentEntity.getId() )
+                .setName( studentEntity.getName() )
+                .setSurname( studentEntity.getSurname() )
+                .setDeleted( studentEntity.getDeleted() )
+                .setGroupDtoResponse(this.mapGroupToDto(studentEntity.getGroupEntity()))
+                .setSpecialityDtoResponse(this.specialtyMapper.mapSpecialityToDtoResponse(studentEntity.getSpecialityEntity()));
+        return studentDtoResponse;
+    }
+
+    public List<StudentDtoResponse> mapStudentsToDtoResponses(List<StudentEntity> studentEntities) {
+        List<StudentDtoResponse> studentDtoResponses = new ArrayList<>();
+        for (StudentEntity studentEntity : studentEntities) {
+            studentDtoResponses.add(this.mapStudentToDtoResponse(studentEntity));
+        }
+        return studentDtoResponses;
+    }
+
 }

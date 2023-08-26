@@ -14,10 +14,15 @@ public class MarkEntity {
     @ManyToOne
     @JoinColumn(name = "student_id", referencedColumnName = "id")
     private StudentEntity studentEntity;
-
+    @Column(name = "mark")
+    private Integer mark;
     @ManyToOne
-    @JoinColumn(name = "schedule_id", referencedColumnName = "id")
-    private ScheduleEntity scheduleEntity;
+    @JoinColumn(name = "subject_id", referencedColumnName = "id")
+    private SubjectEntity subjectEntity;
+    @ManyToOne
+    @JoinColumn(name = "finished_assignment_id", referencedColumnName = "id")
+    private FinishedAssignment finishedAssignment;
+
 
     public Long getId() {
         return id;
@@ -37,12 +42,30 @@ public class MarkEntity {
         return this;
     }
 
-    public ScheduleEntity getScheduleEntity() {
-        return scheduleEntity;
+    public Integer getMark() {
+        return mark;
     }
 
-    public MarkEntity setScheduleEntity(ScheduleEntity scheduleEntity) {
-        this.scheduleEntity = scheduleEntity;
+    public MarkEntity setMark(Integer mark) {
+        this.mark = mark;
+        return this;
+    }
+
+    public SubjectEntity getSubjectEntity() {
+        return subjectEntity;
+    }
+
+    public MarkEntity setSubjectEntity(SubjectEntity subjectEntity) {
+        this.subjectEntity = subjectEntity;
+        return this;
+    }
+
+    public FinishedAssignment getFinishedAssignment() {
+        return finishedAssignment;
+    }
+
+    public MarkEntity setFinishedAssignment(FinishedAssignment finishedAssignment) {
+        this.finishedAssignment = finishedAssignment;
         return this;
     }
 }

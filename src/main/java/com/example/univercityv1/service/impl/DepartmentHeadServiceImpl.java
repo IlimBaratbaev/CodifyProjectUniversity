@@ -1,24 +1,22 @@
 package com.example.univercityv1.service.impl;
 
-import com.example.univercityv1.dto.response.SubjectDtoResponse;
-import com.example.univercityv1.entity.EmployeeEntity;
-import com.example.univercityv1.entity.SpecialityEntity;
-import com.example.univercityv1.entity.SubjectEntity;
-import com.example.univercityv1.entity.TeacherEntity;
+import com.example.univercityv1.dto.request.LessonDtoRequest;
+import com.example.univercityv1.entity.*;
 import com.example.univercityv1.exception.InvalidCredentialsException;
+import com.example.univercityv1.exception.LessonException;
 import com.example.univercityv1.exception.SubjectException;
 import com.example.univercityv1.exception.UserNotFoundException;
 import com.example.univercityv1.mapper.MapstructMapper;
-import com.example.univercityv1.repository.EmployeeRepository;
-import com.example.univercityv1.repository.SpecialityRepository;
-import com.example.univercityv1.repository.SubjectRepository;
-import com.example.univercityv1.repository.TeacherRepository;
+import com.example.univercityv1.repository.*;
 import com.example.univercityv1.service.DepartmentHeadService;
+import com.example.univercityv1.status.LessonStatus;
 import com.example.univercityv1.utils.ExceptionCheckingUtil;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -29,15 +27,23 @@ public class DepartmentHeadServiceImpl implements DepartmentHeadService {
     private final ExceptionCheckingUtil exceptionCheckingUtil;
     private final SpecialityRepository specialityRepository;
     private final MapstructMapper mapstructMapper;
+    private final StudentRepository studentRepository;
+    private final GroupRepository groupRepository;
+    private final LessonRepository lessonRepository;
+    private final ScheduleRepository scheduleRepository;
 
 
-    public DepartmentHeadServiceImpl(EmployeeRepository employeeRepository, TeacherRepository teacherRepository, SubjectRepository subjectRepository, ExceptionCheckingUtil exceptionCheckingUtil, SpecialityRepository specialityRepository, MapstructMapper mapstructMapper) {
+    public DepartmentHeadServiceImpl(EmployeeRepository employeeRepository, TeacherRepository teacherRepository, SubjectRepository subjectRepository, ExceptionCheckingUtil exceptionCheckingUtil, SpecialityRepository specialityRepository, MapstructMapper mapstructMapper, StudentRepository studentRepository, GroupRepository groupRepository, LessonRepository lessonRepository, ScheduleRepository scheduleRepository) {
         this.employeeRepository = employeeRepository;
         this.teacherRepository = teacherRepository;
         this.subjectRepository = subjectRepository;
         this.exceptionCheckingUtil = exceptionCheckingUtil;
         this.specialityRepository = specialityRepository;
         this.mapstructMapper = mapstructMapper;
+        this.studentRepository = studentRepository;
+        this.groupRepository = groupRepository;
+        this.lessonRepository = lessonRepository;
+        this.scheduleRepository = scheduleRepository;
     }
 
     @Override
@@ -115,5 +121,54 @@ public class DepartmentHeadServiceImpl implements DepartmentHeadService {
         Optional<SpecialityEntity> optionalSpecialityEntity = specialityRepository.findById(specialityId);
         exceptionCheckingUtil.checkForPresentOptional(optionalSpecialityEntity, "Специальность", "не найдена!");
         return optionalSpecialityEntity.get();
+    }
+
+    @Override
+    public StudentEntity studentExpulsion(Long studentId) throws UserNotFoundException {
+        Optional<StudentEntity> optionalStudentEntity = studentRepository.findById(studentId);
+        exceptionCheckingUtil.checkForPresentStudent(optionalStudentEntity, studentId.toString());
+        StudentEntity studentEntity = optionalStudentEntity.get();
+        studentEntity.setDeleted(true);
+        studentRepository.save(studentEntity);
+        return studentEntity;
+    }
+
+    @Override
+    public LessonEntity createNewLesson(LessonDtoRequest lessonDtoRequest) throws LessonException, InvalidCredentialsException {
+        if (Objects.isNull(lessonDtoRequest)) {
+            throw new LessonException("Запрос на создание нового урока не должен быть пустым!");
+        }
+        if (Objects.isNull(lessonDtoRequest.getGroupId()) || lessonDtoRequest.getSubjectName().isBlank() || Objects.isNull(lessonDtoRequest.getTeacherId())) {
+            throw new InvalidCredentialsException("Значения не должны быть пустыми");
+        }
+        Optional<TeacherEntity> optionalTeacherEntity = teacherRepository.findById(lessonDtoRequest.getTeacherId());
+        exceptionCheckingUtil.checkForPresentOptional(optionalTeacherEntity, "Учитель", "не найден!");
+        Optional<GroupEntity> optionalGroupEntity = groupRepository.findById(lessonDtoRequest.getGroupId());
+        exceptionCheckingUtil.checkForPresentOptional(optionalGroupEntity, "Группа", "не найдена!");
+        Optional<SubjectEntity> optionalSubjectEntity = subjectRepository.findByTitle(lessonDtoRequest.getSubjectName());
+        exceptionCheckingUtil.checkForPresentOptional(optionalSubjectEntity, "Предмет", "не найден!");
+        String dateString = lessonDtoRequest.getDate();
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+        LocalDateTime lessonDateTime;
+        try {
+            lessonDateTime = LocalDateTime.parse(dateString, formatter);
+        } catch (DateTimeParseException ex) {
+            throw new DateTimeParseException("Строка даты не соответствует формату ISO-8601", ex.getParsedString(), ex.getErrorIndex());
+        }
+        TeacherEntity teacherEntity = optionalTeacherEntity.get();
+        SubjectEntity subjectEntity = optionalSubjectEntity.get();
+        GroupEntity groupEntity = optionalGroupEntity.get();
+        LessonEntity lessonEntity = new LessonEntity();
+        lessonEntity
+                .setGroupEntity(groupEntity)
+                .setLessonStatus(LessonStatus.NOT_STARTED.toString())
+                .setLocalDateTime(lessonDateTime)
+                .setTeacherEntity(teacherEntity)
+                .setSubjectEntity(subjectEntity);
+        lessonRepository.save(lessonEntity);
+        ScheduleEntity scheduleEntity = new ScheduleEntity();
+        scheduleEntity.setLessonEntity(lessonEntity);
+        scheduleRepository.save(scheduleEntity);
+        return lessonEntity;
     }
 }

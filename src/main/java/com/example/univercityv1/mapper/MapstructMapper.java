@@ -15,4 +15,6 @@ public interface MapstructMapper {
     SpecialityDtoResponse mapSpecialityToDto(SpecialityEntity specialityEntity);
     MessageDtoResponse mapMessageToDtoResponse(MessageEntity messageEntity);
     List<SubjectDtoResponse> mapSubjectsToDtoResponses(List<SubjectEntity> subjectEntities);
+    SubjectDtoResponse mapSubjectToDtoResponse(SubjectEntity subjectEntity);
+
 }
