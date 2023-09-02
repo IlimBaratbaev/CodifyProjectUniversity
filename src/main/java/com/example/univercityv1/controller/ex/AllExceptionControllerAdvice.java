@@ -31,7 +31,7 @@ public class AllExceptionControllerAdvice {
     @ExceptionHandler(LessonException.class)
     public ResponseEntity<Response> handleLessonException(LessonException ex) {
         Response response = new Response(ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.OK);
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
     @ExceptionHandler(OrderException.class)
     public ResponseEntity<Response> handleOrderException(OrderException ex) {
@@ -64,5 +64,4 @@ public class AllExceptionControllerAdvice {
         Response response = new Response(ex.getMessage());
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
-
 }
